@@ -8,19 +8,20 @@ namespace MultiplayerARPG.Cinemachine
     {
         public CinemachineBrain brain;
         public CinemachineVirtualCamera virtualCamera;
-        public string pitchAxisName;
-        public float pitchRotateSpeed;
+        public string pitchAxisName = "Mouse Y";
+        public float pitchRotateSpeed = 4f;
         public float pitchRotateSpeedScale = 1f;
         public float pitchBottomClamp = -30f;
         public float pitchTopClamp = 70f;
-        public string yawAxisName;
-        public float yawRotateSpeed;
+        public string yawAxisName = "Mouse X";
+        public float yawRotateSpeed = 4f;
         public float yawRotateSpeedScale = 1f;
-        public string zoomAxisName;
-        public float zoomSpeed;
+        public string zoomAxisName = "Mouse ScrollWheel";
+        public float zoomSpeed = 4f;
         public float zoomSpeedScale = 1f;
-        public float zoomMin = 1f;
-        public float zoomMax = 4;
+        public float zoomSmoothDamp = 1f;
+        public float zoomMin = 2f;
+        public float zoomMax = 8f;
 
         public BasePlayerCharacterEntity PlayerCharacterEntity { get; protected set; }
         public Cinemachine3rdPersonFollow FollowComponent { get; protected set; }
@@ -71,6 +72,7 @@ namespace MultiplayerARPG.Cinemachine
         private float pitch;
         private float yaw;
         private float zoom;
+        private float zoomVelocity;
         private GameObject cameraTarget;
         private int defaultCameraCollisionFilter;
 
@@ -87,7 +89,7 @@ namespace MultiplayerARPG.Cinemachine
             if (cameraTarget == null)
                 cameraTarget = new GameObject("__CMCameraTarget");
 
-            virtualCamera.Follow = FollowingEntityTransform;
+            virtualCamera.Follow = cameraTarget.transform;
             if (UpdateRotation || UpdateRotationX)
             {
                 pitch += InputManager.GetAxis(pitchAxisName, false) * pitchRotateSpeed * pitchRotateSpeedScale;
@@ -101,7 +103,7 @@ namespace MultiplayerARPG.Cinemachine
             yaw = ClampAngle(yaw, float.MinValue, float.MaxValue);
             pitch = ClampAngle(pitch, pitchBottomClamp, pitchTopClamp);
             cameraTarget.transform.position = FollowingEntityTransform.position;
-            cameraTarget.transform.rotation = Quaternion.Euler(pitch, yaw, 0.0f);
+            cameraTarget.transform.rotation = Quaternion.Euler(-pitch, yaw, 0.0f);
 
             if (UpdateZoom)
             {
@@ -109,7 +111,7 @@ namespace MultiplayerARPG.Cinemachine
             }
 
             zoom = Mathf.Clamp(zoom, zoomMin, zoomMax);
-            FollowComponent.CameraDistance = zoom;
+            FollowComponent.CameraDistance = Mathf.SmoothDamp(FollowComponent.CameraDistance, zoom,ref zoomVelocity, zoomSmoothDamp);
         }
 
         private float ClampAngle(float lfAngle, float lfMin, float lfMax)
