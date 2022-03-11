@@ -40,8 +40,28 @@ namespace MultiplayerARPG.Cinemachine
                 FollowComponent.ShoulderOffset = value;
             }
         }
-        public float MinZoomDistance { get; set; }
-        public float MaxZoomDistance { get; set; }
+        public float MinZoomDistance
+        {
+            get
+            {
+                return zoomMin;
+            }
+            set
+            {
+                zoomMin = value;
+            }
+        }
+        public float MaxZoomDistance
+        {
+            get
+            {
+                return zoomMax;
+            }
+            set
+            {
+                zoomMax = value;
+            }
+        }
         public float CurrentZoomDistance
         {
             get
