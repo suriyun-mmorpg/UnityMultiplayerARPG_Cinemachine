@@ -19,7 +19,7 @@ namespace MultiplayerARPG.Cinemachine
         public string zoomAxisName = "Mouse ScrollWheel";
         public float zoomSpeed = 4f;
         public float zoomSpeedScale = 1f;
-        public float zoomSmoothDamp = 1f;
+        public float zoomSmoothTime = 0.25f;
         public float zoomMin = 2f;
         public float zoomMax = 8f;
 
@@ -111,7 +111,7 @@ namespace MultiplayerARPG.Cinemachine
             }
 
             zoom = Mathf.Clamp(zoom, zoomMin, zoomMax);
-            FollowComponent.CameraDistance = Mathf.SmoothDamp(FollowComponent.CameraDistance, zoom,ref zoomVelocity, zoomSmoothDamp);
+            FollowComponent.CameraDistance = Mathf.SmoothDamp(FollowComponent.CameraDistance, zoom,ref zoomVelocity, zoomSmoothTime);
         }
 
         private float ClampAngle(float lfAngle, float lfMin, float lfMax)
