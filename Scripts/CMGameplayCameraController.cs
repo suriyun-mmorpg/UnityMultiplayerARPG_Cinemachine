@@ -1,7 +1,6 @@
 using Cinemachine;
 using UnityEngine;
 
-
 namespace MultiplayerARPG.Cinemachine
 {
     public class CMGameplayCameraController : MonoBehaviour, IGameplayCameraController
@@ -38,6 +37,45 @@ namespace MultiplayerARPG.Cinemachine
             set
             {
                 FollowComponent.ShoulderOffset = value;
+            }
+        }
+        public float CameraFov
+        {
+            get
+            {
+                return virtualCamera.m_Lens.FieldOfView;
+            }
+            set
+            {
+                var lens = virtualCamera.m_Lens;
+                lens.FieldOfView = value;
+                virtualCamera.m_Lens = lens;
+            }
+        }
+        public float CameraNearClipPlane 
+        {
+            get
+            {
+                return virtualCamera.m_Lens.NearClipPlane;
+            }
+            set
+            {
+                var lens = virtualCamera.m_Lens;
+                lens.NearClipPlane = value;
+                virtualCamera.m_Lens = lens;
+            }
+        }
+        public float CameraFarClipPlane 
+        {
+            get
+            {
+                return virtualCamera.m_Lens.FarClipPlane;
+            }
+            set
+            {
+                var lens = virtualCamera.m_Lens;
+                lens.FarClipPlane = value;
+                virtualCamera.m_Lens = lens;
             }
         }
         public float MinZoomDistance
