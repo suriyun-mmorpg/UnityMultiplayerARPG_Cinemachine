@@ -90,6 +90,7 @@ MonoBehaviour:
   zoomAxisName: Mouse ScrollWheel
   zoomSpeed: 4
   zoomSpeedScale: 1
+  zoomSmoothTime: 0.25
   zoomMin: 2
   zoomMax: 8
 --- !u!1 &4102558234373044413
