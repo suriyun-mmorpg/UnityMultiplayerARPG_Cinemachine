@@ -26,7 +26,6 @@ namespace MultiplayerARPG.Cinemachine
         public Cinemachine3rdPersonFollow FollowComponent { get; protected set; }
         public Camera Camera { get; protected set; }
         public Transform CameraTransform { get; protected set; }
-
         public Transform FollowingEntityTransform { get; set; }
         public Vector3 TargetOffset
         {
@@ -134,16 +133,11 @@ namespace MultiplayerARPG.Cinemachine
         private GameObject cameraTarget;
         private int defaultCameraCollisionFilter;
 
-        protected virtual void Start()
-        {
-            Camera = brain.GetComponent<Camera>();
-            CameraTransform = Camera.transform;
-            FollowComponent = virtualCamera.GetCinemachineComponent<Cinemachine3rdPersonFollow>();
-            defaultCameraCollisionFilter = FollowComponent.CameraCollisionFilter;
-        }
-
         protected virtual void Update()
         {
+            if (FollowingEntityTransform == null)
+                return;
+
             if (cameraTarget == null)
                 cameraTarget = new GameObject("__CMCameraTarget");
 
@@ -179,12 +173,16 @@ namespace MultiplayerARPG.Cinemachine
             return Mathf.Clamp(lfAngle, lfMin, lfMax);
         }
 
-        public void Setup(BasePlayerCharacterEntity characterEntity)
+        public virtual void Setup(BasePlayerCharacterEntity characterEntity)
         {
             PlayerCharacterEntity = characterEntity;
+            Camera = brain.GetComponent<Camera>();
+            CameraTransform = Camera.transform;
+            FollowComponent = virtualCamera.GetCinemachineComponent<Cinemachine3rdPersonFollow>();
+            defaultCameraCollisionFilter = FollowComponent.CameraCollisionFilter;
         }
 
-        public void Desetup(BasePlayerCharacterEntity characterEntity)
+        public virtual void Desetup(BasePlayerCharacterEntity characterEntity)
         {
             PlayerCharacterEntity = null;
             FollowingEntityTransform = null;
