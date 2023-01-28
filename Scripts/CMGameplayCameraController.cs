@@ -133,6 +133,11 @@ namespace MultiplayerARPG.Cinemachine
         private GameObject cameraTarget;
         private int defaultCameraCollisionFilter;
 
+        public virtual void Init()
+        {
+
+        }
+
         protected virtual void Update()
         {
             if (FollowingEntityTransform == null)

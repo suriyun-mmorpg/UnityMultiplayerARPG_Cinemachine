@@ -15,7 +15,7 @@ namespace MultiplayerARPG.Cinemachine
         public float AimAssistMaxAngleFromFollowingTarget { get; set; }
         public float CameraRotationSpeedScale { get; set; }
 
-        public void Recoil(float x, float y)
+        public  virtual void Recoil(float x, float y)
         {
 
         }
