@@ -1,4 +1,4 @@
-using Cinemachine;
+using Unity.Cinemachine;
 using UnityEngine;
 
 namespace MultiplayerARPG.Cinemachine
@@ -6,7 +6,7 @@ namespace MultiplayerARPG.Cinemachine
     public class CMGameplayCameraController : MonoBehaviour, IGameplayCameraController
     {
         public CinemachineBrain brain;
-        public CinemachineVirtualCamera virtualCamera;
+        public CinemachineCamera virtualCamera;
         public string pitchAxisName = "Mouse Y";
         public float pitchRotateSpeed = 4f;
         public float pitchRotateSpeedScale = 1f;
@@ -23,7 +23,7 @@ namespace MultiplayerARPG.Cinemachine
         public float zoomMax = 8f;
 
         public BasePlayerCharacterEntity PlayerCharacterEntity { get; protected set; }
-        public Cinemachine3rdPersonFollow FollowComponent { get; protected set; }
+        public CinemachineThirdPersonFollow FollowComponent { get; protected set; }
         public Camera Camera { get; protected set; }
         public Transform CameraTransform { get; protected set; }
         public Transform FollowingEntityTransform { get; set; }
@@ -42,39 +42,39 @@ namespace MultiplayerARPG.Cinemachine
         {
             get
             {
-                return virtualCamera.m_Lens.FieldOfView;
+                return virtualCamera.Lens.FieldOfView;
             }
             set
             {
-                var lens = virtualCamera.m_Lens;
+                var lens = virtualCamera.Lens;
                 lens.FieldOfView = value;
-                virtualCamera.m_Lens = lens;
+                virtualCamera.Lens = lens;
             }
         }
         public float CameraNearClipPlane 
         {
             get
             {
-                return virtualCamera.m_Lens.NearClipPlane;
+                return virtualCamera.Lens.NearClipPlane;
             }
             set
             {
-                var lens = virtualCamera.m_Lens;
+                var lens = virtualCamera.Lens;
                 lens.NearClipPlane = value;
-                virtualCamera.m_Lens = lens;
+                virtualCamera.Lens = lens;
             }
         }
         public float CameraFarClipPlane 
         {
             get
             {
-                return virtualCamera.m_Lens.FarClipPlane;
+                return virtualCamera.Lens.FarClipPlane;
             }
             set
             {
-                var lens = virtualCamera.m_Lens;
+                var lens = virtualCamera.Lens;
                 lens.FarClipPlane = value;
-                virtualCamera.m_Lens = lens;
+                virtualCamera.Lens = lens;
             }
         }
         public float MinZoomDistance
@@ -114,11 +114,11 @@ namespace MultiplayerARPG.Cinemachine
         {
             get
             {
-                return FollowComponent.CameraCollisionFilter != 0;
+                return FollowComponent.AvoidObstacles.CollisionFilter != 0;
             }
             set
             {
-                FollowComponent.CameraCollisionFilter = value ? defaultCameraCollisionFilter : 0;
+                FollowComponent.AvoidObstacles.CollisionFilter = value ? defaultCameraCollisionFilter : 0;
             }
         }
         public bool UpdateRotation { get; set; }
@@ -183,8 +183,8 @@ namespace MultiplayerARPG.Cinemachine
             PlayerCharacterEntity = characterEntity;
             Camera = brain.GetComponent<Camera>();
             CameraTransform = Camera.transform;
-            FollowComponent = virtualCamera.GetCinemachineComponent<Cinemachine3rdPersonFollow>();
-            defaultCameraCollisionFilter = FollowComponent.CameraCollisionFilter;
+            FollowComponent = (CinemachineThirdPersonFollow)virtualCamera.GetCinemachineComponent(CinemachineCore.Stage.Body);
+            defaultCameraCollisionFilter = FollowComponent.AvoidObstacles.CollisionFilter;
         }
 
         public virtual void Desetup(BasePlayerCharacterEntity characterEntity)
