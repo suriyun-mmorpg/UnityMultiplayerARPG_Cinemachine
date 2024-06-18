@@ -69,7 +69,8 @@ MonoBehaviour:
   buildRotateAngle: 45
   buildRotateSpeed: 200
   crosshairRect: {fileID: 224344548392091454}
-  defaultCameraRotationSpeedScaleSaveKey: DEFAULT_CAMERA_ROTATION_SPEED_SCALE
+  thirdPersonCameraRotationSpeedScaleSaveKey: 3RD_PERSON_CAMERA_SCALE
+  firstPersonCameraRotationSpeedScaleSaveKey: 1ST_PERSON_CAMERA_SCALE
   tpsZoomDistance: 3
   tpsMinZoomDistance: 3
   tpsMaxZoomDistance: 3
@@ -95,14 +96,15 @@ MonoBehaviour:
   fpsFov: 60
   fpsNearClipPlane: 0.01
   fpsFarClipPlane: 1000
-  enableAimAssist: 0
-  enableAimAssistX: 0
+  enableAimAssist: 1
+  enableAimAssistX: 1
   enableAimAssistY: 1
-  aimAssistOnFireOnly: 1
+  aimAssistOnFireOnly: 0
   aimAssistRadius: 0.5
   aimAssistXSpeed: 20
   aimAssistYSpeed: 20
-  aimAssistCharacter: 1
+  aimAssistPlayer: 1
+  aimAssistMonster: 1
   aimAssistBuilding: 0
   aimAssistHarvestable: 0
   recoilRateWhileMoving: 1.5
@@ -140,6 +142,13 @@ MonoBehaviour:
   zoomSmoothTime: 0.25
   zoomMin: 2
   zoomMax: 8
+  aimAssistMinDistanceFromFollowingTarget: 3
+  aimAssistDistance: 10
+  aimAssistObstacleLayerMask:
+    serializedVersion: 2
+    m_Bits: 1
+  recoilReturnSpeed: 2
+  recoilSmoothing: 6
 --- !u!1 &1139447957822342
 GameObject:
   m_ObjectHideFlags: 0
