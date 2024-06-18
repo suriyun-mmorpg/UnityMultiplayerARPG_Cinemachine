@@ -118,7 +118,7 @@ namespace MultiplayerARPG.Cinemachine
             }
             set
             {
-                FollowComponent.AvoidObstacles.CollisionFilter = value ? defaultCameraCollisionFilter : 0;
+                FollowComponent.AvoidObstacles.CollisionFilter = value ? _defaultCameraCollisionFilter : 0;
             }
         }
         public bool UpdateRotation { get; set; }
@@ -126,12 +126,12 @@ namespace MultiplayerARPG.Cinemachine
         public bool UpdateRotationY { get; set; }
         public bool UpdateZoom { get; set; }
 
-        private float pitch;
-        private float yaw;
-        private float zoom;
-        private float zoomVelocity;
-        private GameObject cameraTarget;
-        private int defaultCameraCollisionFilter;
+        protected float _pitch;
+        protected float _yaw;
+        protected float _zoom;
+        protected float _zoomVelocity;
+        protected GameObject _cameraTarget;
+        protected int _defaultCameraCollisionFilter;
 
         public virtual void Init()
         {
@@ -143,32 +143,32 @@ namespace MultiplayerARPG.Cinemachine
             if (FollowingEntityTransform == null)
                 return;
 
-            if (cameraTarget == null)
-                cameraTarget = new GameObject("__CMCameraTarget");
+            if (_cameraTarget == null)
+                _cameraTarget = new GameObject("__CMCameraTarget");
 
-            virtualCamera.Follow = cameraTarget.transform;
+            virtualCamera.Follow = _cameraTarget.transform;
             if (UpdateRotation || UpdateRotationX)
             {
-                pitch += InputManager.GetAxis(pitchAxisName, false) * pitchRotateSpeed * pitchRotateSpeedScale;
+                _pitch += InputManager.GetAxis(pitchAxisName, false) * pitchRotateSpeed * pitchRotateSpeedScale;
             }
 
             if (UpdateRotation || UpdateRotationY)
             {
-                yaw += InputManager.GetAxis(yawAxisName, false) * yawRotateSpeed * yawRotateSpeedScale;
+                _yaw += InputManager.GetAxis(yawAxisName, false) * yawRotateSpeed * yawRotateSpeedScale;
             }
 
-            yaw = ClampAngle(yaw, float.MinValue, float.MaxValue);
-            pitch = ClampAngle(pitch, pitchBottomClamp, pitchTopClamp);
-            cameraTarget.transform.position = FollowingEntityTransform.position;
-            cameraTarget.transform.rotation = Quaternion.Euler(-pitch, yaw, 0.0f);
+            _yaw = ClampAngle(_yaw, float.MinValue, float.MaxValue);
+            _pitch = ClampAngle(_pitch, pitchBottomClamp, pitchTopClamp);
+            _cameraTarget.transform.position = FollowingEntityTransform.position;
+            _cameraTarget.transform.rotation = Quaternion.Euler(-_pitch, _yaw, 0.0f);
 
             if (UpdateZoom)
             {
-                zoom += InputManager.GetAxis(zoomAxisName, false) * zoomSpeed * zoomSpeedScale;
+                _zoom += InputManager.GetAxis(zoomAxisName, false) * zoomSpeed * zoomSpeedScale;
             }
 
-            zoom = Mathf.Clamp(zoom, zoomMin, zoomMax);
-            FollowComponent.CameraDistance = Mathf.SmoothDamp(FollowComponent.CameraDistance, zoom,ref zoomVelocity, zoomSmoothTime);
+            _zoom = Mathf.Clamp(_zoom, zoomMin, zoomMax);
+            FollowComponent.CameraDistance = Mathf.SmoothDamp(FollowComponent.CameraDistance, _zoom,ref _zoomVelocity, zoomSmoothTime);
         }
 
         private float ClampAngle(float lfAngle, float lfMin, float lfMax)
@@ -184,7 +184,7 @@ namespace MultiplayerARPG.Cinemachine
             Camera = brain.GetComponent<Camera>();
             CameraTransform = Camera.transform;
             FollowComponent = (CinemachineThirdPersonFollow)virtualCamera.GetCinemachineComponent(CinemachineCore.Stage.Body);
-            defaultCameraCollisionFilter = FollowComponent.AvoidObstacles.CollisionFilter;
+            _defaultCameraCollisionFilter = FollowComponent.AvoidObstacles.CollisionFilter;
         }
 
         public virtual void Desetup(BasePlayerCharacterEntity characterEntity)
