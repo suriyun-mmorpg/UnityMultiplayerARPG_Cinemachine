@@ -171,11 +171,11 @@ namespace MultiplayerARPG.Cinemachine
             FollowComponent.CameraDistance = Mathf.SmoothDamp(FollowComponent.CameraDistance, _zoom,ref _zoomVelocity, zoomSmoothTime);
         }
 
-        private float ClampAngle(float lfAngle, float lfMin, float lfMax)
+        private float ClampAngle(float angle, float min, float max)
         {
-            if (lfAngle < -360f) lfAngle += 360f;
-            if (lfAngle > 360f) lfAngle -= 360f;
-            return Mathf.Clamp(lfAngle, lfMin, lfMax);
+            float start = (min + max) * 0.5f - 180;
+            float floor = Mathf.FloorToInt((angle - start) / 360) * 360;
+            return Mathf.Clamp(angle, min + floor, max + floor);
         }
 
         public virtual void Setup(BasePlayerCharacterEntity characterEntity)

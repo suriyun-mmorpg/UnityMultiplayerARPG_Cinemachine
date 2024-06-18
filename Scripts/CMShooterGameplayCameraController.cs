@@ -33,7 +33,7 @@ namespace MultiplayerARPG.Cinemachine
         public float aimAssistMinDistanceFromFollowingTarget = 3f;
         public float aimAssistDistance = 10f;
         [Tooltip("Set only obstacle layers, it will be used to check hitting object layer is an obstacle or not. If it is, it won't perform aim assisting")]
-        public LayerMask aimAssistObstacleLayerMask = 0;
+        public LayerMask aimAssistObstacleLayerMask = Physics.DefaultRaycastLayers;
 
         [Header("Recoil")]
         public float recoilReturnSpeed = 2f;
@@ -81,45 +81,40 @@ namespace MultiplayerARPG.Cinemachine
 
         protected void UpdateAimAssist(float deltaTime)
         {
-            if (EnableAimAssist)
+            if (!EnableAimAssist)
+                return;
+            RaycastHit[] hits = Physics.SphereCastAll(CameraTransform.position, AimAssistRadius, CameraTransform.forward, aimAssistDistance, GetAimAssistLayerMask());
+            System.Array.Sort(hits, 0, hits.Length, new RaycastHitComparer());
+            RaycastHit tempHit;
+            RaycastHit? hitTarget = null;
+            Vector3 cameraDir = CameraTransform.forward;
+            Vector3 targetDir;
+            for (int i = 0; i < hits.Length; ++i)
             {
-                RaycastHit[] hits = Physics.SphereCastAll(CameraTransform.position, AimAssistRadius, CameraTransform.forward, aimAssistDistance, GetAimAssistLayerMask());
-                System.Array.Sort(hits, 0, hits.Length, new RaycastHitComparer());
-                RaycastHit tempHit;
-                RaycastHit? hitTarget = null;
-                Vector3 cameraDir = CameraTransform.forward;
-                Vector3 targetDir;
-                for (int i = 0; i < hits.Length; ++i)
-                {
-                    tempHit = hits[i];
-                    if (aimAssistObstacleLayerMask.value == (aimAssistObstacleLayerMask.value | (1 << tempHit.transform.gameObject.layer)))
-                        return;
-                    if (AvoidAimAssist(tempHit))
-                        continue;
-                    if (Vector3.Distance(PlayerCharacterEntity.EntityTransform.position, tempHit.point) <= aimAssistMinDistanceFromFollowingTarget)
-                        continue;
-                    targetDir = (tempHit.point - PlayerCharacterEntity.EntityTransform.position).normalized;
-                    if (Vector3.Angle(cameraDir, targetDir) > AimAssistMaxAngleFromFollowingTarget)
-                        continue;
-                    hitTarget = tempHit;
-                    break;
-                }
-                if (hitTarget.HasValue)
-                {
-                    // Set `xRotation`, `yRotation` by hit object's position
-                    _aimAssistCastHit = hitTarget.Value;
-                    Vector3 targetCenter = _aimAssistCastHit.collider.bounds.center;
-                    Vector3 directionToTarget = (targetCenter - CameraTransform.position).normalized;
-                    Quaternion lookRotation = Quaternion.LookRotation(directionToTarget);
-                    float xRotation = _cameraTarget.transform.eulerAngles.x;
-                    float yRotation = _cameraTarget.transform.eulerAngles.y;
-                    if (EnableAimAssistX)
-                        xRotation = Mathf.LerpAngle(xRotation, lookRotation.eulerAngles.x, AimAssistXSpeed * deltaTime);
-                    if (EnableAimAssistY)
-                        yRotation = Mathf.LerpAngle(yRotation, lookRotation.eulerAngles.y, AimAssistYSpeed * deltaTime);
-                    _cameraTarget.transform.eulerAngles = new Vector3(xRotation, yRotation, _cameraTarget.transform.eulerAngles.z);
-                }
+                tempHit = hits[i];
+                if (aimAssistObstacleLayerMask.value == (aimAssistObstacleLayerMask.value | (1 << tempHit.transform.gameObject.layer)))
+                    return;
+                if (AvoidAimAssist(tempHit))
+                    continue;
+                if (Vector3.Distance(PlayerCharacterEntity.EntityTransform.position, tempHit.point) <= aimAssistMinDistanceFromFollowingTarget)
+                    continue;
+                targetDir = (tempHit.point - PlayerCharacterEntity.EntityTransform.position).normalized;
+                if (Vector3.Angle(cameraDir, targetDir) > AimAssistMaxAngleFromFollowingTarget)
+                    continue;
+                hitTarget = tempHit;
+                break;
             }
+            if (!hitTarget.HasValue)
+                return;
+            // Set `xRotation`, `yRotation` by hit object's position
+            _aimAssistCastHit = hitTarget.Value;
+            Vector3 targetCenter = _aimAssistCastHit.collider.bounds.center;
+            Vector3 directionToTarget = (targetCenter - CameraTransform.position).normalized;
+            Quaternion lookRotation = Quaternion.LookRotation(directionToTarget);
+            if (EnableAimAssistX)
+                _pitch = Mathf.MoveTowardsAngle(_pitch, lookRotation.eulerAngles.x, AimAssistXSpeed * deltaTime);
+            if (EnableAimAssistY)
+                _yaw = Mathf.MoveTowardsAngle(_yaw, lookRotation.eulerAngles.y, AimAssistYSpeed * deltaTime);
         }
 
         public virtual void Recoil(float x, float y, float z)
