@@ -27,7 +27,6 @@ namespace MultiplayerARPG.Cinemachine
         public float AimAssistXSpeed { get; set; }
         public float AimAssistYSpeed { get; set; }
         public float AimAssistMaxAngleFromFollowingTarget { get; set; }
-        public float CameraRotationSpeedScale { get; set; }
 
         [Header("Aim Assist")]
         public float aimAssistMinDistanceFromFollowingTarget = 3f;
@@ -77,6 +76,13 @@ namespace MultiplayerARPG.Cinemachine
             _targetRecoilRotation = Vector3.Lerp(_targetRecoilRotation, Vector3.zero, deltaTime * recoilReturnSpeed);
             _currentRecoilRotation = Vector3.Lerp(_currentRecoilRotation, _targetRecoilRotation, Time.fixedDeltaTime * recoilSmoothing);
             _cameraTarget.transform.eulerAngles += _currentRecoilRotation;
+        }
+
+        private void LateUpdate()
+        {
+            // TODO: Make it configuarable
+            if (GameInstance.PlayingCharacterEntity != null && GameInstance.PlayingCharacterEntity.ActiveMovement != null && _cameraTarget != null)
+                GameInstance.PlayingCharacterEntity.ActiveMovement.SetLookRotation(Quaternion.LookRotation(_cameraTarget.transform.forward), true);
         }
 
         protected void UpdateAimAssist(float deltaTime)

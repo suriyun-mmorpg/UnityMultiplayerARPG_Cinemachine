@@ -12,15 +12,20 @@ namespace MultiplayerARPG.Cinemachine
         public float pitchRotateSpeedScale = 1f;
         public float pitchBottomClamp = -30f;
         public float pitchTopClamp = 70f;
+        public float pitchBottomClampForCrouch = -30f;
+        public float pitchTopClampForCrouch = 70f;
+        public float pitchBottomClampForCrawl = -30f;
+        public float pitchTopClampForCrawl = 70f;
+        public float pitchBottomClampForSwim = -30f;
+        public float pitchTopClampForSwim = 70f;
         public string yawAxisName = "Mouse X";
         public float yawRotateSpeed = 4f;
         public float yawRotateSpeedScale = 1f;
         public string zoomAxisName = "Mouse ScrollWheel";
         public float zoomSpeed = 4f;
         public float zoomSpeedScale = 1f;
-        public float zoomSmoothTime = 0.25f;
-        public float zoomMin = 2f;
-        public float zoomMax = 8f;
+        public float zoomDamping = 10f;
+        public float cameraSideDamping = 10f;
 
         public BasePlayerCharacterEntity PlayerCharacterEntity { get; protected set; }
         public CinemachineThirdPersonFollow FollowComponent { get; protected set; }
@@ -51,7 +56,7 @@ namespace MultiplayerARPG.Cinemachine
                 virtualCamera.Lens = lens;
             }
         }
-        public float CameraNearClipPlane 
+        public float CameraNearClipPlane
         {
             get
             {
@@ -64,7 +69,7 @@ namespace MultiplayerARPG.Cinemachine
                 virtualCamera.Lens = lens;
             }
         }
-        public float CameraFarClipPlane 
+        public float CameraFarClipPlane
         {
             get
             {
@@ -81,25 +86,13 @@ namespace MultiplayerARPG.Cinemachine
         {
             get
             {
-                return zoomMin;
+                return FollowComponent.CameraDistance;
             }
             set
             {
-                zoomMin = value;
             }
         }
         public float MaxZoomDistance
-        {
-            get
-            {
-                return zoomMax;
-            }
-            set
-            {
-                zoomMax = value;
-            }
-        }
-        public float CurrentZoomDistance
         {
             get
             {
@@ -107,9 +100,9 @@ namespace MultiplayerARPG.Cinemachine
             }
             set
             {
-                FollowComponent.CameraDistance = value;
             }
         }
+        public float CurrentZoomDistance { get; set; }
         public bool EnableWallHitSpring
         {
             get
@@ -125,13 +118,16 @@ namespace MultiplayerARPG.Cinemachine
         public bool UpdateRotationX { get; set; }
         public bool UpdateRotationY { get; set; }
         public bool UpdateZoom { get; set; }
+        public float CameraRotationSpeedScale { get; set; }
+        public bool IsLeftViewSide { get; set; }
+        public bool IsZoomAimming { get; set; }
 
         protected float _pitch;
         protected float _yaw;
         protected float _zoom;
-        protected float _zoomVelocity;
         protected GameObject _cameraTarget;
         protected int _defaultCameraCollisionFilter;
+        protected float _currentCameraSide = 1f;
 
         public virtual void Init()
         {
@@ -147,28 +143,58 @@ namespace MultiplayerARPG.Cinemachine
                 _cameraTarget = new GameObject("__CMCameraTarget");
 
             virtualCamera.Follow = _cameraTarget.transform;
+
+            float pitchBottomClamp = this.pitchBottomClamp;
+            float pitchTopClamp = this.pitchTopClamp;
+
+            if (GameInstance.PlayingCharacterEntity.MovementState.Has(MovementState.IsUnderWater))
+            {
+                pitchBottomClamp = pitchBottomClampForSwim;
+                pitchTopClamp = pitchTopClampForSwim;
+            }
+            else if (GameInstance.PlayingCharacterEntity.ExtraMovementState == ExtraMovementState.IsCrouching)
+            {
+                pitchBottomClamp = pitchBottomClampForCrouch;
+                pitchTopClamp = pitchTopClampForCrouch;
+            }
+            else if (GameInstance.PlayingCharacterEntity.ExtraMovementState == ExtraMovementState.IsCrawling)
+            {
+                pitchBottomClamp = pitchBottomClampForCrawl;
+                pitchTopClamp = pitchTopClampForCrawl;
+            }
+
             if (UpdateRotation || UpdateRotationX)
             {
-                _pitch += InputManager.GetAxis(pitchAxisName, false) * pitchRotateSpeed * pitchRotateSpeedScale;
+                float pitchInput = InputManager.GetAxis(pitchAxisName, false);
+                _pitch += -pitchInput * pitchRotateSpeed * pitchRotateSpeedScale * (CameraRotationSpeedScale > 0 ? CameraRotationSpeedScale : 1f);
             }
 
             if (UpdateRotation || UpdateRotationY)
             {
-                _yaw += InputManager.GetAxis(yawAxisName, false) * yawRotateSpeed * yawRotateSpeedScale;
+                float yawInput = InputManager.GetAxis(yawAxisName, false);
+                _yaw += yawInput * yawRotateSpeed * yawRotateSpeedScale * (CameraRotationSpeedScale > 0 ? CameraRotationSpeedScale : 1f);
             }
 
             _yaw = ClampAngle(_yaw, float.MinValue, float.MaxValue);
             _pitch = ClampAngle(_pitch, pitchBottomClamp, pitchTopClamp);
+
+            Quaternion targetRotation = Quaternion.Euler(_pitch, _yaw, 0.0f);
+            _cameraTarget.transform.rotation = targetRotation;
+
             _cameraTarget.transform.position = FollowingEntityTransform.position;
-            _cameraTarget.transform.rotation = Quaternion.Euler(-_pitch, _yaw, 0.0f);
 
-            if (UpdateZoom)
+            _zoom = Mathf.Lerp(_zoom, CurrentZoomDistance, zoomDamping * Time.deltaTime);
+            FollowComponent.CameraDistance = _zoom;
+
+            if (IsLeftViewSide)
             {
-                _zoom += InputManager.GetAxis(zoomAxisName, false) * zoomSpeed * zoomSpeedScale;
+                _currentCameraSide = Mathf.Lerp(_currentCameraSide, 0, cameraSideDamping * Time.deltaTime);
             }
-
-            _zoom = Mathf.Clamp(_zoom, zoomMin, zoomMax);
-            FollowComponent.CameraDistance = Mathf.SmoothDamp(FollowComponent.CameraDistance, _zoom,ref _zoomVelocity, zoomSmoothTime);
+            else
+            {
+                _currentCameraSide = Mathf.Lerp(_currentCameraSide, 1, cameraSideDamping * Time.deltaTime);
+            }
+            FollowComponent.CameraSide = _currentCameraSide;
         }
 
         private float ClampAngle(float angle, float min, float max)
