@@ -71,12 +71,13 @@ MonoBehaviour:
   crosshairRect: {fileID: 224344548392091454}
   thirdPersonCameraRotationSpeedScaleSaveKey: 3RD_PERSON_CAMERA_SCALE
   firstPersonCameraRotationSpeedScaleSaveKey: 1ST_PERSON_CAMERA_SCALE
+  sprintDelayAfterActions: 1
   tpsZoomDistance: 3
-  tpsMinZoomDistance: 3
-  tpsMaxZoomDistance: 3
   tpsTargetOffset: {x: 0.75, y: 1.25, z: 0}
   tpsTargetOffsetWhileCrouching: {x: 0.75, y: 0.75, z: 0}
   tpsTargetOffsetWhileCrawling: {x: 0.75, y: 0.5, z: 0}
+  tpsTargetOffsetWhileSprinting: {x: 0.75, y: 1.25, z: 0}
+  tpsTargetOffsetDamping: 10
   tpsFov: 60
   tpsNearClipPlane: 0.3
   tpsFarClipPlane: 1000
@@ -89,6 +90,14 @@ MonoBehaviour:
   turnSpeedWhileCrawling: 20
   turnSpeedWhileSwimming: 20
   turnSpeedWhileDoingAction: 20
+  shoulderZoomDistance: 0
+  shoulderTargetOffset: {x: 0, y: 1.25, z: 0}
+  shoulderTargetOffsetWhileSprinting: {x: 0, y: 1.25, z: 0}
+  shoulderTargetOffsetWhileCrouching: {x: 0, y: 0.75, z: 0}
+  shoulderTargetOffsetWhileCrawling: {x: 0, y: 0.5, z: 0}
+  shoulderFov: 50
+  shoulderNearClipPlane: 0.01
+  shoulderFarClipPlane: 1000
   fpsZoomDistance: 0
   fpsTargetOffset: {x: 0, y: 1.25, z: 0}
   fpsTargetOffsetWhileCrouching: {x: 0, y: -0.25, z: 0}
@@ -133,15 +142,20 @@ MonoBehaviour:
   pitchRotateSpeedScale: 1
   pitchBottomClamp: -30
   pitchTopClamp: 70
+  pitchBottomClampForCrouch: -30
+  pitchTopClampForCrouch: 70
+  pitchBottomClampForCrawl: -30
+  pitchTopClampForCrawl: 70
+  pitchBottomClampForSwim: -30
+  pitchTopClampForSwim: 70
   yawAxisName: Mouse X
   yawRotateSpeed: 4
   yawRotateSpeedScale: 1
   zoomAxisName: Mouse ScrollWheel
   zoomSpeed: 4
   zoomSpeedScale: 1
-  zoomSmoothTime: 0.25
-  zoomMin: 2
-  zoomMax: 8
+  zoomDamping: 10
+  cameraSideDamping: 10
   aimAssistMinDistanceFromFollowingTarget: 3
   aimAssistDistance: 10
   aimAssistObstacleLayerMask:
@@ -931,6 +945,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   copyFromCamera: {fileID: 8454752350259610648}
   copyToCamera: {fileID: 559563779609308305}
+  copyOrthographic: 1
+  copyOrthographicSize: 1
+  copyNearClipPlane: 1
+  copyFarClipPlane: 1
+  copyFieldOfView: 1
+  copyRect: 1
+  copyUsePhysicalProperties: 1
+  copyFocalLength: 1
+  copySensorSize: 1
+  copyLensShift: 1
 --- !u!1 &8095542676685744261
 GameObject:
   m_ObjectHideFlags: 0
