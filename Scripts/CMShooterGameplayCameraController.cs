@@ -35,6 +35,7 @@ namespace MultiplayerARPG.Cinemachine
         public LayerMask aimAssistObstacleLayerMask = Physics.DefaultRaycastLayers;
 
         [Header("Recoil")]
+        public bool noRecoilReturning = true;
         public float recoilReturnSpeed = 2f;
         public float recoilSmoothing = 6f;
 
@@ -73,9 +74,16 @@ namespace MultiplayerARPG.Cinemachine
             UpdateAimAssist(deltaTime);
             base.Update();
             // Update recoiling
-            _targetRecoilRotation = Vector3.Lerp(_targetRecoilRotation, Vector3.zero, deltaTime * recoilReturnSpeed);
+            if (!noRecoilReturning)
+                _targetRecoilRotation = Vector3.Lerp(_targetRecoilRotation, Vector3.zero, deltaTime * recoilReturnSpeed);
             _currentRecoilRotation = Vector3.Lerp(_currentRecoilRotation, _targetRecoilRotation, Time.fixedDeltaTime * recoilSmoothing);
             _cameraTarget.transform.eulerAngles += _currentRecoilRotation;
+            if (noRecoilReturning)
+            {
+                _pitch = _cameraTarget.transform.eulerAngles.x;
+                _yaw = _cameraTarget.transform.eulerAngles.y;
+                _targetRecoilRotation = Vector3.zero;
+            }
         }
 
         private void LateUpdate()
