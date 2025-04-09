@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Unity.Cinemachine;
 using UnityEngine;
 
 namespace MultiplayerARPG.Cinemachine
@@ -35,7 +36,8 @@ namespace MultiplayerARPG.Cinemachine
         public LayerMask aimAssistObstacleLayerMask = Physics.DefaultRaycastLayers;
 
         [Header("Recoil")]
-        public bool noRecoilReturning = true;
+        public bool noRecoilReturningPitch = true;
+        public bool noRecoilReturningYaw = true;
         public float recoilReturnSpeed = 2f;
         public float recoilSmoothing = 6f;
 
@@ -74,16 +76,22 @@ namespace MultiplayerARPG.Cinemachine
             UpdateAimAssist(deltaTime);
             base.Update();
             // Update recoiling
-            if (!noRecoilReturning)
-                _targetRecoilRotation = Vector3.Lerp(_targetRecoilRotation, Vector3.zero, deltaTime * recoilReturnSpeed);
+            _targetRecoilRotation = Vector3.Lerp(_targetRecoilRotation, Vector3.zero, deltaTime * recoilReturnSpeed);
             _currentRecoilRotation = Vector3.Lerp(_currentRecoilRotation, _targetRecoilRotation, Time.fixedDeltaTime * recoilSmoothing);
             _cameraTarget.transform.eulerAngles += _currentRecoilRotation;
-            if (noRecoilReturning)
+            if (noRecoilReturningPitch)
             {
                 _pitch = _cameraTarget.transform.eulerAngles.x;
-                _yaw = _cameraTarget.transform.eulerAngles.y;
-                _targetRecoilRotation = Vector3.zero;
+                _targetRecoilRotation = new Vector3(0f, _targetRecoilRotation.y, _targetRecoilRotation.z);
             }
+            if (noRecoilReturningYaw)
+            {
+                _yaw = _cameraTarget.transform.eulerAngles.y;
+                _targetRecoilRotation = new Vector3(_targetRecoilRotation.x, 0f, _targetRecoilRotation.z);
+            }
+            LensSettings lensSettings = virtualCamera.Lens;
+            lensSettings.Dutch = _cameraTarget.transform.eulerAngles.z;
+            virtualCamera.Lens = lensSettings;
         }
 
         private void LateUpdate()
