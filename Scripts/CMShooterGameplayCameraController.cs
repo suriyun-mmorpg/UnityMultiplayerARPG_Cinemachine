@@ -17,6 +17,7 @@ namespace MultiplayerARPG.Cinemachine
             }
         }
 
+        public ShooterControllerViewMode ActiveViewMode { get; set; }
         public bool EnableAimAssist { get; set; }
         public bool EnableAimAssistX { get; set; }
         public bool EnableAimAssistY { get; set; }
@@ -28,6 +29,9 @@ namespace MultiplayerARPG.Cinemachine
         public float AimAssistXSpeed { get; set; }
         public float AimAssistYSpeed { get; set; }
         public float AimAssistMaxAngleFromFollowingTarget { get; set; }
+        public Transform LookForwardTransform => _cameraTarget.transform;
+
+        public bool smoothViewModeChanging = false;
 
         [Header("Aim Assist")]
         public float aimAssistMinDistanceFromFollowingTarget = 3f;
@@ -44,6 +48,7 @@ namespace MultiplayerARPG.Cinemachine
         protected Vector3 _targetRecoilRotation;
         protected Vector3 _currentRecoilRotation;
         protected RaycastHit _aimAssistCastHit;
+        protected bool _prevViewModeIsFps = false;
 
         protected virtual int GetAimAssistLayerMask()
         {
@@ -74,7 +79,21 @@ namespace MultiplayerARPG.Cinemachine
         {
             float deltaTime = Time.deltaTime;
             UpdateAimAssist(deltaTime);
+            float preChangeZoomDamping = zoomDamping;
+            float preChangeOffsetDamping = offsetDamping;
+            if (!smoothViewModeChanging)
+            {
+                bool viewModeIsFps = ActiveViewMode == ShooterControllerViewMode.Fps;
+                if (viewModeIsFps != _prevViewModeIsFps)
+                {
+                    zoomDamping = 0f;
+                    offsetDamping = 0f;
+                }
+                _prevViewModeIsFps = viewModeIsFps;
+            }
             base.Update();
+            zoomDamping = preChangeZoomDamping;
+            offsetDamping = preChangeOffsetDamping;
             // Update recoiling
             _targetRecoilRotation = Vector3.Lerp(_targetRecoilRotation, Vector3.zero, deltaTime * recoilReturnSpeed);
             _currentRecoilRotation = Vector3.Lerp(_currentRecoilRotation, _targetRecoilRotation, Time.fixedDeltaTime * recoilSmoothing);
@@ -92,13 +111,6 @@ namespace MultiplayerARPG.Cinemachine
             LensSettings lensSettings = virtualCamera.Lens;
             lensSettings.Dutch = _cameraTarget.transform.eulerAngles.z;
             virtualCamera.Lens = lensSettings;
-        }
-
-        private void LateUpdate()
-        {
-            // TODO: Make it configuarable
-            if (GameInstance.PlayingCharacterEntity != null && GameInstance.PlayingCharacterEntity.ActiveMovement != null && _cameraTarget != null)
-                GameInstance.PlayingCharacterEntity.ActiveMovement.SetLookRotation(Quaternion.LookRotation(_cameraTarget.transform.forward), true);
         }
 
         protected void UpdateAimAssist(float deltaTime)

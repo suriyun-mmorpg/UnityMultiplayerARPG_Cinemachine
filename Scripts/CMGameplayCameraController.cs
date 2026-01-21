@@ -19,6 +19,7 @@ namespace MultiplayerARPG.Cinemachine
         public float pitchTopClampForCrawl = 70f;
         public float pitchBottomClampForSwim = -30f;
         public float pitchTopClampForSwim = 70f;
+        public float pitchClampDamping = 10f;
         public string yawAxisName = "Mouse X";
         public float yawRotateSpeed = 4f;
         public float yawRotateSpeedScale = 1f;
@@ -27,23 +28,15 @@ namespace MultiplayerARPG.Cinemachine
         public float zoomSpeedScale = 1f;
         public float zoomDamping = 10f;
         public float cameraSideDamping = 10f;
+        public float targetOffsetsDamping = 1f;
+        public float offsetDamping = 10f;
 
         public BasePlayerCharacterEntity PlayerCharacterEntity { get; protected set; }
         public CinemachineThirdPersonFollow FollowComponent { get; protected set; }
         public Camera Camera { get; protected set; }
         public Transform CameraTransform { get; protected set; }
         public Transform FollowingEntityTransform { get; set; }
-        public Vector3 TargetOffset
-        {
-            get
-            {
-                return FollowComponent.ShoulderOffset;
-            }
-            set
-            {
-                FollowComponent.ShoulderOffset = value;
-            }
-        }
+        public Vector3 TargetOffset { get; set; }
         public float CameraFov
         {
             get
@@ -123,12 +116,16 @@ namespace MultiplayerARPG.Cinemachine
         public bool IsLeftViewSide { get; set; }
         public bool IsZoomAimming { get; set; }
 
+        protected float? _pitchBottomClamp;
+        protected float? _pitchTopClamp;
         protected float _pitch;
         protected float _yaw;
         protected float _zoom;
+        protected Vector3 _offset;
         protected GameObject _cameraTarget;
         protected int _defaultCameraCollisionFilter;
         protected float _currentCameraSide = 1f;
+        protected Vector3? _targetOffsets;
 
         public virtual void Init()
         {
@@ -143,6 +140,7 @@ namespace MultiplayerARPG.Cinemachine
             if (_cameraTarget == null)
                 _cameraTarget = new GameObject("__CMCameraTarget");
 
+            float deltaTime = Time.deltaTime;
             virtualCamera.Follow = _cameraTarget.transform;
 
             float pitchBottomClamp = this.pitchBottomClamp;
@@ -176,26 +174,66 @@ namespace MultiplayerARPG.Cinemachine
                 _yaw += yawInput * yawRotateSpeed * yawRotateSpeedScale * (CameraRotationSpeedScale > 0 ? CameraRotationSpeedScale : 1f);
             }
 
+            if (!_pitchBottomClamp.HasValue)
+                _pitchBottomClamp = pitchBottomClamp;
+            else
+                _pitchBottomClamp = Mathf.Lerp(_pitchBottomClamp.Value, pitchBottomClamp, pitchClampDamping * deltaTime);
+
+            if (!_pitchTopClamp.HasValue)
+                _pitchTopClamp = pitchTopClamp;
+            else
+                _pitchTopClamp = Mathf.Lerp(_pitchTopClamp.Value, pitchTopClamp, pitchClampDamping * deltaTime);
+
             _yaw = ClampAngle(_yaw, float.MinValue, float.MaxValue);
-            _pitch = ClampAngle(_pitch, pitchBottomClamp, pitchTopClamp);
+            _pitch = ClampAngle(_pitch, _pitchBottomClamp.Value, _pitchTopClamp.Value);
 
             Quaternion targetRotation = Quaternion.Euler(_pitch, _yaw, 0.0f);
             _cameraTarget.transform.rotation = targetRotation;
 
             _cameraTarget.transform.position = FollowingEntityTransform.position;
 
-            _zoom = Mathf.Lerp(_zoom, CurrentZoomDistance, zoomDamping * Time.deltaTime);
+            if (zoomDamping <= 0f)
+                _zoom = CurrentZoomDistance;
+            else
+                _zoom = Mathf.Lerp(_zoom, CurrentZoomDistance, zoomDamping * Time.deltaTime);
+
             FollowComponent.CameraDistance = _zoom;
 
             if (IsLeftViewSide)
             {
-                _currentCameraSide = Mathf.Lerp(_currentCameraSide, 0, cameraSideDamping * Time.deltaTime);
+                _currentCameraSide = Mathf.Lerp(_currentCameraSide, 0, cameraSideDamping * deltaTime);
             }
             else
             {
-                _currentCameraSide = Mathf.Lerp(_currentCameraSide, 1, cameraSideDamping * Time.deltaTime);
+                _currentCameraSide = Mathf.Lerp(_currentCameraSide, 1, cameraSideDamping * deltaTime);
             }
             FollowComponent.CameraSide = _currentCameraSide;
+
+            Vector3 targetOffsets = TargetOffset;
+            float signedPitch = ToSignedAngle(_pitch);
+            if (signedPitch > 0f)
+            {
+                // Remap pitch 0–70 -> 0–1
+                float t = Mathf.InverseLerp(0f, pitchTopClamp, signedPitch);
+
+                // Lerp Z from +3 -> -3
+                float z = Mathf.Lerp(TargetOffset.z, -TargetOffset.z, t);
+
+                // Final offset
+                targetOffsets = new Vector3(TargetOffset.x, TargetOffset.y, z);
+            }
+
+            if (!_targetOffsets.HasValue)
+                _targetOffsets = targetOffsets;
+            else
+                _targetOffsets = Vector3.Lerp(_targetOffsets.Value, targetOffsets, targetOffsetsDamping * deltaTime);
+
+            if (offsetDamping <= 0)
+                _offset = _targetOffsets.Value;
+            else
+                _offset = Vector3.Lerp(_offset, _targetOffsets.Value, offsetDamping * deltaTime);
+
+            FollowComponent.ShoulderOffset = _offset;
         }
 
         private float ClampAngle(float angle, float min, float max)
@@ -203,6 +241,11 @@ namespace MultiplayerARPG.Cinemachine
             float start = (min + max) * 0.5f - 180;
             float floor = Mathf.FloorToInt((angle - start) / 360) * 360;
             return Mathf.Clamp(angle, min + floor, max + floor);
+        }
+
+        private float ToSignedAngle(float angle)
+        {
+            return (angle > 180f) ? angle - 360f : angle;
         }
 
         public virtual void Setup(BasePlayerCharacterEntity characterEntity)
