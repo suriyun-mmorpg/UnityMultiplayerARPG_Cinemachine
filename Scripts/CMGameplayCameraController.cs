@@ -101,11 +101,11 @@ namespace MultiplayerARPG.Cinemachine
         {
             get
             {
-                return FollowComponent.AvoidObstacles.CollisionFilter != 0;
+                return FollowComponent.AvoidObstacles.Enabled;
             }
             set
             {
-                FollowComponent.AvoidObstacles.CollisionFilter = value ? _defaultCameraCollisionFilter : 0;
+                FollowComponent.AvoidObstacles.Enabled = value;
             }
         }
         public bool UpdateRotation { get; set; }
@@ -123,7 +123,6 @@ namespace MultiplayerARPG.Cinemachine
         protected float _zoom;
         protected Vector3 _offset;
         protected GameObject _cameraTarget;
-        protected int _defaultCameraCollisionFilter;
         protected float _currentCameraSide = 1f;
         protected Vector3? _targetOffsets;
 
@@ -254,7 +253,6 @@ namespace MultiplayerARPG.Cinemachine
             Camera = brain.GetComponent<Camera>();
             CameraTransform = Camera.transform;
             FollowComponent = (CinemachineThirdPersonFollow)virtualCamera.GetCinemachineComponent(CinemachineCore.Stage.Body);
-            _defaultCameraCollisionFilter = FollowComponent.AvoidObstacles.CollisionFilter;
         }
 
         public virtual void Desetup(BasePlayerCharacterEntity characterEntity)
