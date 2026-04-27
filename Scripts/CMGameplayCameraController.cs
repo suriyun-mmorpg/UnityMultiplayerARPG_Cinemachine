@@ -96,7 +96,18 @@ namespace MultiplayerARPG.Cinemachine
             {
             }
         }
-        public float CurrentZoomDistance { get; set; }
+        private float _currentZoomDistance;
+        public float CurrentZoomDistance
+        {
+            get
+            {
+                return OverrideCameraZoom.GetValue(_currentZoomDistance);
+            }
+            set
+            {
+                _currentZoomDistance = value;
+            }
+        }
         public bool EnableWallHitSpring
         {
             get
@@ -112,6 +123,10 @@ namespace MultiplayerARPG.Cinemachine
         public bool UpdateRotationX { get; set; }
         public bool UpdateRotationY { get; set; }
         public bool UpdateZoom { get; set; }
+        protected readonly ValueOverride<float> _overrideCameraZoom = new ValueOverride<float>();
+        public ValueOverride<float> OverrideCameraZoom => _overrideCameraZoom;
+        protected readonly ValueOverride<GameplayCameraRotationData> _overrideCameraRotation = new ValueOverride<GameplayCameraRotationData>();
+        public ValueOverride<GameplayCameraRotationData> OverrideCameraRotation => _overrideCameraRotation;
         public float CameraRotationSpeedScale { get; set; }
         public bool IsLeftViewSide { get; set; }
         public bool IsZoomAimming { get; set; }
@@ -187,6 +202,12 @@ namespace MultiplayerARPG.Cinemachine
             _pitch = ClampAngle(_pitch, _pitchBottomClamp.Value, _pitchTopClamp.Value);
 
             Quaternion targetRotation = Quaternion.Euler(_pitch, _yaw, 0.0f);
+            if (OverrideCameraRotation.TryGetValue(out GameplayCameraRotationData rotationData))
+            {
+                targetRotation = Quaternion.Slerp(_cameraTarget.transform.rotation, rotationData.Rotation, rotationData.RotationSpeed * deltaTime);
+                _yaw = targetRotation.eulerAngles.y;
+                _pitch = targetRotation.eulerAngles.x;
+            }
             _cameraTarget.transform.rotation = targetRotation;
 
             _cameraTarget.transform.position = FollowingEntityTransform.position;
