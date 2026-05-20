@@ -52,11 +52,14 @@ MonoBehaviour:
   gameplayCameraPrefab: {fileID: 0}
   minimapCameraPrefab: {fileID: 114548782499701980, guid: 280aed852e1f49946840d29f4118a058,
     type: 3}
+  fpsModelContainer: {fileID: 0}
+  updateFpsModelContainerActivating: 1
   mode: 0
-  alwaysTurnForwardWhileCombat: 0
   emptyAmmoAutoReload: 0
   canSwitchViewMode: 0
   viewMode: 0
+  tpsObjects: []
+  fpsObjects: []
   sprintActiveMode: 2
   walkActiveMode: 0
   crouchActiveMode: 1
@@ -69,15 +72,19 @@ MonoBehaviour:
   buildRotateAngle: 45
   buildRotateSpeed: 200
   crosshairRect: {fileID: 224344548392091454}
+  hideCrosshair: 0
+  disableAttackInSafeArea: 0
+  enableWallHitSpring: 1
   thirdPersonCameraRotationSpeedScaleSaveKey: 3RD_PERSON_CAMERA_SCALE
   firstPersonCameraRotationSpeedScaleSaveKey: 1ST_PERSON_CAMERA_SCALE
   sprintDelayAfterActions: 1
+  walkDelayAfterActions: 1
   tpsZoomDistance: 3
   tpsTargetOffset: {x: 0.75, y: 1.25, z: 0}
+  tpsTargetOffsetWhileSprinting: {x: 0.75, y: 1.25, z: 0}
+  tpsTargetOffsetWhileWalking: {x: 0.75, y: 0.5, z: 0}
   tpsTargetOffsetWhileCrouching: {x: 0.75, y: 0.75, z: 0}
   tpsTargetOffsetWhileCrawling: {x: 0.75, y: 0.5, z: 0}
-  tpsTargetOffsetWhileSprinting: {x: 0.75, y: 1.25, z: 0}
-  tpsTargetOffsetDamping: 10
   tpsFov: 60
   tpsNearClipPlane: 0.3
   tpsFarClipPlane: 1000
@@ -93,6 +100,7 @@ MonoBehaviour:
   shoulderZoomDistance: 0
   shoulderTargetOffset: {x: 0, y: 1.25, z: 0}
   shoulderTargetOffsetWhileSprinting: {x: 0, y: 1.25, z: 0}
+  shoulderTargetOffsetWhileWalking: {x: 0, y: -0.25, z: 0}
   shoulderTargetOffsetWhileCrouching: {x: 0, y: 0.75, z: 0}
   shoulderTargetOffsetWhileCrawling: {x: 0, y: 0.5, z: 0}
   shoulderFov: 50
@@ -148,19 +156,26 @@ MonoBehaviour:
   pitchTopClampForCrawl: 70
   pitchBottomClampForSwim: -30
   pitchTopClampForSwim: 70
+  pitchClampDamping: 10
   yawAxisName: Mouse X
   yawRotateSpeed: 4
   yawRotateSpeedScale: 1
+  rotateSpeedScale: 1
   zoomAxisName: Mouse ScrollWheel
   zoomSpeed: 4
   zoomSpeedScale: 1
   zoomDamping: 10
   cameraSideDamping: 10
+  targetOffsetsDamping: 1
+  offsetDamping: 10
+  smoothViewModeChanging: 0
   aimAssistMinDistanceFromFollowingTarget: 3
   aimAssistDistance: 10
   aimAssistObstacleLayerMask:
     serializedVersion: 2
     m_Bits: 1
+  noRecoilReturningPitch: 1
+  noRecoilReturningYaw: 1
   recoilReturnSpeed: 2
   recoilSmoothing: 6
 --- !u!1 &1139447957822342
@@ -858,6 +873,7 @@ GameObject:
   - component: {fileID: 5831194026012102222}
   - component: {fileID: 559563779609308305}
   - component: {fileID: 5481408076995743464}
+  - component: {fileID: 1100718234357144405}
   m_Layer: 0
   m_Name: CharacterUICamera
   m_TagString: Untagged
@@ -925,7 +941,7 @@ Camera:
   m_TargetDisplay: 0
   m_TargetEye: 3
   m_HDR: 0
-  m_AllowMSAA: 0
+  m_AllowMSAA: 1
   m_AllowDynamicResolution: 0
   m_ForceIntoRT: 0
   m_OcclusionCulling: 0
@@ -955,6 +971,50 @@ MonoBehaviour:
   copyFocalLength: 1
   copySensorSize: 1
   copyLensShift: 1
+--- !u!114 &1100718234357144405
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5053933145271415170}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a79441f348de89743a2939f4d699eac1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_RenderShadows: 1
+  m_RequiresDepthTextureOption: 2
+  m_RequiresOpaqueTextureOption: 2
+  m_CameraType: 1
+  m_Cameras: []
+  m_RendererIndex: -1
+  m_VolumeLayerMask:
+    serializedVersion: 2
+    m_Bits: 1
+  m_VolumeTrigger: {fileID: 0}
+  m_VolumeFrameworkUpdateModeOption: 2
+  m_RenderPostProcessing: 0
+  m_Antialiasing: 0
+  m_AntialiasingQuality: 2
+  m_StopNaN: 0
+  m_Dithering: 0
+  m_ClearDepth: 1
+  m_AllowXRRendering: 1
+  m_AllowHDROutput: 1
+  m_UseScreenCoordOverride: 0
+  m_ScreenSizeOverride: {x: 0, y: 0, z: 0, w: 0}
+  m_ScreenCoordScaleBias: {x: 0, y: 0, z: 0, w: 0}
+  m_RequiresDepthTexture: 0
+  m_RequiresColorTexture: 0
+  m_Version: 2
+  m_TaaSettings:
+    m_Quality: 3
+    m_FrameInfluence: 0.1
+    m_JitterScale: 1
+    m_MipBias: 0
+    m_VarianceClampScale: 0.9
+    m_ContrastAdaptiveSharpening: 0
 --- !u!1 &8095542676685744261
 GameObject:
   m_ObjectHideFlags: 0
@@ -967,6 +1027,7 @@ GameObject:
   - component: {fileID: 8454752350259610648}
   - component: {fileID: 859624525795033751}
   - component: {fileID: 8877483885698833589}
+  - component: {fileID: 8899047034206081010}
   m_Layer: 0
   m_Name: GameplayCamera
   m_TagString: MainCamera
@@ -1088,3 +1149,48 @@ MonoBehaviour:
       m_PostInfinity: 2
       m_RotationOrder: 4
   CustomBlends: {fileID: 0}
+--- !u!114 &8899047034206081010
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8095542676685744261}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a79441f348de89743a2939f4d699eac1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_RenderShadows: 1
+  m_RequiresDepthTextureOption: 2
+  m_RequiresOpaqueTextureOption: 2
+  m_CameraType: 0
+  m_Cameras:
+  - {fileID: 559563779609308305}
+  m_RendererIndex: -1
+  m_VolumeLayerMask:
+    serializedVersion: 2
+    m_Bits: 1
+  m_VolumeTrigger: {fileID: 0}
+  m_VolumeFrameworkUpdateModeOption: 2
+  m_RenderPostProcessing: 0
+  m_Antialiasing: 0
+  m_AntialiasingQuality: 2
+  m_StopNaN: 0
+  m_Dithering: 0
+  m_ClearDepth: 1
+  m_AllowXRRendering: 1
+  m_AllowHDROutput: 1
+  m_UseScreenCoordOverride: 0
+  m_ScreenSizeOverride: {x: 0, y: 0, z: 0, w: 0}
+  m_ScreenCoordScaleBias: {x: 0, y: 0, z: 0, w: 0}
+  m_RequiresDepthTexture: 0
+  m_RequiresColorTexture: 0
+  m_Version: 2
+  m_TaaSettings:
+    m_Quality: 3
+    m_FrameInfluence: 0.1
+    m_JitterScale: 1
+    m_MipBias: 0
+    m_VarianceClampScale: 0.9
+    m_ContrastAdaptiveSharpening: 0
