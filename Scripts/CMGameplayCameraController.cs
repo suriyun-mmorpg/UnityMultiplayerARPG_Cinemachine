@@ -23,9 +23,12 @@ namespace MultiplayerARPG.Cinemachine
         public string yawAxisName = "Mouse X";
         public float yawRotateSpeed = 4f;
         public float yawRotateSpeedScale = 1f;
+        public float rotateSpeedScale = 1f;
         public string zoomAxisName = "Mouse ScrollWheel";
         public float zoomSpeed = 4f;
         public float zoomSpeedScale = 1f;
+        public float zoomMin = 2f;
+        public float zoomMax = 8f;
         public float zoomDamping = 10f;
         public float cameraSideDamping = 10f;
         public float targetOffsetsDamping = 1f;
@@ -35,8 +38,6 @@ namespace MultiplayerARPG.Cinemachine
         public CinemachineThirdPersonFollow FollowComponent { get; protected set; }
         public Camera Camera { get; protected set; }
         public Transform CameraTransform { get; protected set; }
-        public Transform FollowingEntityTransform { get; set; }
-        public Vector3 TargetOffset { get; set; }
         public float CameraFov
         {
             get
@@ -76,38 +77,6 @@ namespace MultiplayerARPG.Cinemachine
                 virtualCamera.Lens = lens;
             }
         }
-        public float MinZoomDistance
-        {
-            get
-            {
-                return FollowComponent.CameraDistance;
-            }
-            set
-            {
-            }
-        }
-        public float MaxZoomDistance
-        {
-            get
-            {
-                return FollowComponent.CameraDistance;
-            }
-            set
-            {
-            }
-        }
-        private float _currentZoomDistance;
-        public float CurrentZoomDistance
-        {
-            get
-            {
-                return OverrideCameraZoom.GetValue(_currentZoomDistance);
-            }
-            set
-            {
-                _currentZoomDistance = value;
-            }
-        }
         public bool EnableWallHitSpring
         {
             get
@@ -123,13 +92,7 @@ namespace MultiplayerARPG.Cinemachine
         public bool UpdateRotationX { get; set; }
         public bool UpdateRotationY { get; set; }
         public bool UpdateZoom { get; set; }
-        protected readonly ValueOverride<float> _overrideCameraZoom = new ValueOverride<float>();
-        public ValueOverride<float> OverrideCameraZoom => _overrideCameraZoom;
-        protected readonly ValueOverride<GameplayCameraRotationData> _overrideCameraRotation = new ValueOverride<GameplayCameraRotationData>();
-        public ValueOverride<GameplayCameraRotationData> OverrideCameraRotation => _overrideCameraRotation;
-        public float CameraRotationSpeedScale { get; set; }
-        public bool IsLeftViewSide { get; set; }
-        public bool IsZoomAimming { get; set; }
+        public BasePlayerCharacterController PlayerCharacterController { get; protected set; }
 
         protected float? _pitchBottomClamp;
         protected float? _pitchTopClamp;
@@ -138,18 +101,34 @@ namespace MultiplayerARPG.Cinemachine
         protected float _zoom;
         protected Vector3 _offset;
         protected GameObject _cameraTarget;
-        protected float _currentCameraSide = 1f;
         protected Vector3? _targetOffsets;
 
-        public virtual void Init()
+        public virtual void Init(BasePlayerCharacterController controller)
         {
-
+            PlayerCharacterController = controller;
+            Camera = brain.GetComponent<Camera>();
+            CameraTransform = Camera.transform;
+            if (virtualCamera == null)
+                virtualCamera = brain.ActiveVirtualCamera as CinemachineCamera;
+            FollowComponent = (CinemachineThirdPersonFollow)virtualCamera.GetCinemachineComponent(CinemachineCore.Stage.Body);
+            _offset = PlayerCharacterController.AssignedCameraTargetOffset = FollowComponent.ShoulderOffset;
+            _zoom = PlayerCharacterController.AssignedCameraZoomDistance = FollowComponent.CameraDistance;
+            PlayerCharacterController.AssignedCameraFov = CameraFov;
+            PlayerCharacterController.AssignedCameraNearClipPlane = CameraNearClipPlane;
+            PlayerCharacterController.AssignedCameraFarClipPlane = CameraFarClipPlane;
+            PlayerCharacterController.AssignedCameraRotationSpeedScale = rotateSpeedScale;
+            PlayerCharacterController.AssignedEnableWallHitSpring = EnableWallHitSpring;
         }
 
         protected virtual void Update()
         {
-            if (FollowingEntityTransform == null)
+            if (PlayerCharacterController.CameraTargetTransform == null)
                 return;
+
+            CameraFov = PlayerCharacterController.CameraFov;
+            CameraNearClipPlane = PlayerCharacterController.CameraNearClipPlane;
+            CameraFarClipPlane = PlayerCharacterController.CameraFarClipPlane;
+            EnableWallHitSpring = PlayerCharacterController.EnableWallHitSpring;
 
             if (_cameraTarget == null)
                 _cameraTarget = new GameObject("__CMCameraTarget");
@@ -179,13 +158,13 @@ namespace MultiplayerARPG.Cinemachine
             if (UpdateRotation || UpdateRotationX)
             {
                 float pitchInput = InputManager.GetAxis(pitchAxisName, false);
-                _pitch += -pitchInput * pitchRotateSpeed * pitchRotateSpeedScale * (CameraRotationSpeedScale > 0 ? CameraRotationSpeedScale : 1f);
+                _pitch += -pitchInput * pitchRotateSpeed * pitchRotateSpeedScale * (PlayerCharacterController.CameraRotationSpeedScale > 0 ? PlayerCharacterController.CameraRotationSpeedScale : 1f);
             }
 
             if (UpdateRotation || UpdateRotationY)
             {
                 float yawInput = InputManager.GetAxis(yawAxisName, false);
-                _yaw += yawInput * yawRotateSpeed * yawRotateSpeedScale * (CameraRotationSpeedScale > 0 ? CameraRotationSpeedScale : 1f);
+                _yaw += yawInput * yawRotateSpeed * yawRotateSpeedScale * (PlayerCharacterController.CameraRotationSpeedScale > 0 ? PlayerCharacterController.CameraRotationSpeedScale : 1f);
             }
 
             if (!_pitchBottomClamp.HasValue)
@@ -201,35 +180,41 @@ namespace MultiplayerARPG.Cinemachine
             _yaw = ClampAngle(_yaw, float.MinValue, float.MaxValue);
             _pitch = ClampAngle(_pitch, _pitchBottomClamp.Value, _pitchTopClamp.Value);
 
+            DoUpdateRotation(deltaTime);
+            //
+            DoUpdateCameraDistance(deltaTime);
+            DoUpdateCameraSide(deltaTime);
+            DoUpdateOffset(deltaTime);
+            _cameraTarget.transform.position = PlayerCharacterController.CameraTargetTransform.position;
+        }
+
+        protected virtual void DoUpdateRotation(float deltaTime)
+        {
             Quaternion targetRotation = Quaternion.Euler(_pitch, _yaw, 0.0f);
-            if (OverrideCameraRotation.TryGetValue(out GameplayCameraRotationData rotationData))
-            {
-                targetRotation = Quaternion.Slerp(_cameraTarget.transform.rotation, rotationData.Rotation, rotationData.RotationSpeed * deltaTime);
-                _yaw = targetRotation.eulerAngles.y;
-                _pitch = targetRotation.eulerAngles.x;
-            }
             _cameraTarget.transform.rotation = targetRotation;
+        }
 
-            _cameraTarget.transform.position = FollowingEntityTransform.position;
-
+        protected virtual void DoUpdateCameraDistance(float deltaTime)
+        {
+            if (UpdateZoom)
+            {
+                _zoom += InputManager.GetAxis(zoomAxisName, false) * zoomSpeed * zoomSpeedScale;
+                _zoom = Mathf.Clamp(_zoom, zoomMin, zoomMax);
+            }
             if (zoomDamping <= 0f)
-                _zoom = CurrentZoomDistance;
+                FollowComponent.CameraDistance = _zoom;
             else
-                _zoom = Mathf.Lerp(_zoom, CurrentZoomDistance, zoomDamping * Time.deltaTime);
+                FollowComponent.CameraDistance = Mathf.Lerp(FollowComponent.CameraDistance, _zoom, zoomDamping * deltaTime);
+        }
 
-            FollowComponent.CameraDistance = _zoom;
+        protected virtual void DoUpdateCameraSide(float deltaTime)
+        {
+            FollowComponent.CameraSide = 1f;
+        }
 
-            if (IsLeftViewSide)
-            {
-                _currentCameraSide = Mathf.Lerp(_currentCameraSide, 0, cameraSideDamping * deltaTime);
-            }
-            else
-            {
-                _currentCameraSide = Mathf.Lerp(_currentCameraSide, 1, cameraSideDamping * deltaTime);
-            }
-            FollowComponent.CameraSide = _currentCameraSide;
-
-            Vector3 targetOffsets = TargetOffset;
+        protected virtual void DoUpdateOffset(float deltaTime)
+        {
+            Vector3 targetOffsets = PlayerCharacterController.CameraTargetOffset;
             float signedPitch = ToSignedAngle(_pitch);
             if (signedPitch > 0f)
             {
@@ -237,13 +222,13 @@ namespace MultiplayerARPG.Cinemachine
                 float t = Mathf.InverseLerp(0f, pitchTopClamp, signedPitch);
 
                 // Lerp Z from +3 -> -3
-                float z = Mathf.Lerp(TargetOffset.z, -TargetOffset.z, t);
+                float z = Mathf.Lerp(PlayerCharacterController.CameraTargetOffset.z, -PlayerCharacterController.CameraTargetOffset.z, t);
 
                 // Final offset
-                targetOffsets = new Vector3(TargetOffset.x, TargetOffset.y, z);
+                targetOffsets = new Vector3(PlayerCharacterController.CameraTargetOffset.x, PlayerCharacterController.CameraTargetOffset.y, z);
             }
 
-            if (!_targetOffsets.HasValue)
+            if (targetOffsetsDamping <= 0f || !_targetOffsets.HasValue)
                 _targetOffsets = targetOffsets;
             else
                 _targetOffsets = Vector3.Lerp(_targetOffsets.Value, targetOffsets, targetOffsetsDamping * deltaTime);
@@ -271,15 +256,11 @@ namespace MultiplayerARPG.Cinemachine
         public virtual void Setup(BasePlayerCharacterEntity characterEntity)
         {
             PlayerCharacterEntity = characterEntity;
-            Camera = brain.GetComponent<Camera>();
-            CameraTransform = Camera.transform;
-            FollowComponent = (CinemachineThirdPersonFollow)virtualCamera.GetCinemachineComponent(CinemachineCore.Stage.Body);
         }
 
         public virtual void Desetup(BasePlayerCharacterEntity characterEntity)
         {
             PlayerCharacterEntity = null;
-            FollowingEntityTransform = null;
         }
     }
 }

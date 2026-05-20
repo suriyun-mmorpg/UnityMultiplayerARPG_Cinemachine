@@ -17,7 +17,6 @@ namespace MultiplayerARPG.Cinemachine
             }
         }
 
-        public ShooterControllerViewMode ActiveViewMode { get; set; }
         public bool EnableAimAssist { get; set; }
         public bool EnableAimAssistX { get; set; }
         public bool EnableAimAssistY { get; set; }
@@ -49,6 +48,7 @@ namespace MultiplayerARPG.Cinemachine
         protected Vector3 _currentRecoilRotation;
         protected RaycastHit _aimAssistCastHit;
         protected bool _prevViewModeIsFps = false;
+        protected float _currentCameraSide = 1f;
 
         protected virtual int GetAimAssistLayerMask()
         {
@@ -83,7 +83,7 @@ namespace MultiplayerARPG.Cinemachine
             float preChangeOffsetDamping = offsetDamping;
             if (!smoothViewModeChanging)
             {
-                bool viewModeIsFps = ActiveViewMode == ShooterControllerViewMode.Fps;
+                bool viewModeIsFps = PlayerCharacterController is ShooterPlayerCharacterController shooterController && shooterController.ActiveViewMode == ShooterControllerViewMode.Fps;
                 if (viewModeIsFps != _prevViewModeIsFps)
                 {
                     zoomDamping = 0f;
@@ -111,6 +111,40 @@ namespace MultiplayerARPG.Cinemachine
             LensSettings lensSettings = virtualCamera.Lens;
             lensSettings.Dutch = _cameraTarget.transform.eulerAngles.z;
             virtualCamera.Lens = lensSettings;
+        }
+
+        protected override void DoUpdateRotation(float deltaTime)
+        {
+            Quaternion targetRotation = Quaternion.Euler(_pitch, _yaw, 0.0f);
+            if (PlayerCharacterController is ShooterPlayerCharacterController shooterController && shooterController.OverrideCameraRotation.TryGetValue(out GameplayCameraRotationData rotationData))
+            {
+                targetRotation = Quaternion.Slerp(_cameraTarget.transform.rotation, rotationData.Rotation, rotationData.RotationSpeed * deltaTime);
+                _yaw = targetRotation.eulerAngles.y;
+                _pitch = targetRotation.eulerAngles.x;
+            }
+            _cameraTarget.transform.rotation = targetRotation;
+        }
+
+        protected override void DoUpdateCameraDistance(float deltaTime)
+        {
+            _zoom = PlayerCharacterController.CameraZoomDistance;
+            if (zoomDamping <= 0f)
+                FollowComponent.CameraDistance = _zoom;
+            else
+                FollowComponent.CameraDistance = Mathf.Lerp(FollowComponent.CameraDistance, _zoom, zoomDamping * deltaTime);
+        }
+
+        protected override void DoUpdateCameraSide(float deltaTime)
+        {
+            if (PlayerCharacterController is ShooterPlayerCharacterController shooterController && shooterController.IsLeftViewSide)
+            {
+                _currentCameraSide = Mathf.Lerp(_currentCameraSide, 0, cameraSideDamping * deltaTime);
+            }
+            else
+            {
+                _currentCameraSide = Mathf.Lerp(_currentCameraSide, 1, cameraSideDamping * deltaTime);
+            }
+            FollowComponent.CameraSide = _currentCameraSide;
         }
 
         protected void UpdateAimAssist(float deltaTime)
