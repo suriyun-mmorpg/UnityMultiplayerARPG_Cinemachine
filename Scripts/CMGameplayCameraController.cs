@@ -155,17 +155,7 @@ namespace MultiplayerARPG.Cinemachine
                 pitchTopClamp = pitchTopClampForCrawl;
             }
 
-            if (UpdateRotation || UpdateRotationX)
-            {
-                float pitchInput = InputManager.GetAxis(pitchAxisName, false);
-                _pitch += -pitchInput * pitchRotateSpeed * pitchRotateSpeedScale * (PlayerCharacterController.CameraRotationSpeedScale > 0 ? PlayerCharacterController.CameraRotationSpeedScale : 1f);
-            }
-
-            if (UpdateRotation || UpdateRotationY)
-            {
-                float yawInput = InputManager.GetAxis(yawAxisName, false);
-                _yaw += yawInput * yawRotateSpeed * yawRotateSpeedScale * (PlayerCharacterController.CameraRotationSpeedScale > 0 ? PlayerCharacterController.CameraRotationSpeedScale : 1f);
-            }
+            DoUpdateRotationInput(deltaTime);
 
             if (!_pitchBottomClamp.HasValue)
                 _pitchBottomClamp = pitchBottomClamp;
@@ -181,11 +171,25 @@ namespace MultiplayerARPG.Cinemachine
             _pitch = ClampAngle(_pitch, _pitchBottomClamp.Value, _pitchTopClamp.Value);
 
             DoUpdateRotation(deltaTime);
-            //
             DoUpdateCameraDistance(deltaTime);
             DoUpdateCameraSide(deltaTime);
             DoUpdateOffset(deltaTime);
             _cameraTarget.transform.position = PlayerCharacterController.CameraTargetTransform.position;
+        }
+
+        protected virtual void DoUpdateRotationInput(float deltaTime)
+        {
+            if (UpdateRotation || UpdateRotationX)
+            {
+                float pitchInput = InputManager.GetAxis(pitchAxisName, false);
+                _pitch += -pitchInput * pitchRotateSpeed * pitchRotateSpeedScale * (PlayerCharacterController.CameraRotationSpeedScale > 0 ? PlayerCharacterController.CameraRotationSpeedScale : 1f);
+            }
+
+            if (UpdateRotation || UpdateRotationY)
+            {
+                float yawInput = InputManager.GetAxis(yawAxisName, false);
+                _yaw += yawInput * yawRotateSpeed * yawRotateSpeedScale * (PlayerCharacterController.CameraRotationSpeedScale > 0 ? PlayerCharacterController.CameraRotationSpeedScale : 1f);
+            }
         }
 
         protected virtual void DoUpdateRotation(float deltaTime)
@@ -218,13 +222,8 @@ namespace MultiplayerARPG.Cinemachine
             float signedPitch = ToSignedAngle(_pitch);
             if (signedPitch > 0f)
             {
-                // Remap pitch 0–70 -> 0–1
                 float t = Mathf.InverseLerp(0f, pitchTopClamp, signedPitch);
-
-                // Lerp Z from +3 -> -3
                 float z = Mathf.Lerp(PlayerCharacterController.CameraTargetOffset.z, -PlayerCharacterController.CameraTargetOffset.z, t);
-
-                // Final offset
                 targetOffsets = new Vector3(PlayerCharacterController.CameraTargetOffset.x, PlayerCharacterController.CameraTargetOffset.y, z);
             }
 
