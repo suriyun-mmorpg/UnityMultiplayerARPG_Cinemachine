@@ -28,7 +28,7 @@ namespace MultiplayerARPG.Cinemachine
         public float AimAssistXSpeed { get; set; }
         public float AimAssistYSpeed { get; set; }
         public float AimAssistMaxAngleFromFollowingTarget { get; set; }
-        public Transform LookForwardTransform => _cameraTarget.transform;
+        public Transform LookForwardTransform => _cameraTarget == null ? null : _cameraTarget.transform;
 
         public bool smoothViewModeChanging = false;
 
