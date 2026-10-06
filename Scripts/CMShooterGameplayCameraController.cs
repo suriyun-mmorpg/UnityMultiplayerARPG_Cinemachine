@@ -95,8 +95,10 @@ namespace MultiplayerARPG.Cinemachine
             zoomDamping = preChangeZoomDamping;
             offsetDamping = preChangeOffsetDamping;
             // Update recoiling
-            _targetRecoilRotation = Vector3.Lerp(_targetRecoilRotation, Vector3.zero, deltaTime * recoilReturnSpeed);
-            _currentRecoilRotation = Vector3.Lerp(_currentRecoilRotation, _targetRecoilRotation, Time.fixedDeltaTime * recoilSmoothing);
+            // Consume new impulses before returning the target, including on slow frames.
+            float recoilFollow = 1f - Mathf.Exp(-recoilSmoothing * deltaTime);
+            _currentRecoilRotation = Vector3.Lerp(_currentRecoilRotation, _targetRecoilRotation, recoilFollow);
+            _targetRecoilRotation *= Mathf.Exp(-recoilReturnSpeed * deltaTime);
             _cameraTarget.transform.eulerAngles += _currentRecoilRotation;
             if (noRecoilReturningPitch)
             {
